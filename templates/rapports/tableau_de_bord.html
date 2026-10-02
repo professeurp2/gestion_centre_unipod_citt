@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titre %}Tableau de bord — UNIPOD{% endblock %}
+{% block contenu %}
+<h1>Tableau de bord {% if centre %}— {{ centre.nom }}{% else %}— tous les centres{% endif %}</h1>
+
+<form class="filtres" method="get">
+  <label>Centre
+    <select name="centre">
+      <option value="">Tous les centres</option>
+      {% for c in centres %}<option value="{{ c.code }}" {% if centre and c.pk == centre.pk %}selected{% endif %}>{{ c.nom }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Du <input type="date" name="debut" value="{{ debut|date:'Y-m-d' }}"></label>
+  <label>Au <input type="date" name="fin" value="{{ fin|date:'Y-m-d' }}"></label>
+  <button class="bouton" type="submit">Actualiser</button>
+  <a class="bouton secondaire" href="{% url 'export-indicateurs' %}?{{ request.GET.urlencode }}">Exporter CSV</a>
+</form>
+
+<h2>Alertes opérationnelles</h2>
+<div class="alertes">
+  <div class="panneau">
+    <h3>Stocks sous le seuil <span class="badge {% if alertes.stock_bas %}rouge{% endif %}">{{ alertes.stock_bas|length }}</span></h3>
+    <ul>{% for a in alertes.stock_bas %}<li><a href="{% url 'admin:stocks_article_change' a.pk %}">{{ a.designation }}</a><span class="badge rouge">{{ a.quantite|floatformat:"-2" }} / {{ a.seuil_alerte|floatformat:"-2" }} {{ a.get_unite_display }}</span></li>{% empty %}<li class="vide">Aucun article en alerte.</li>{% endfor %}</ul>
+  </div>
+  <div class="panneau">
+    <h3>Machines indisponibles <span class="badge {% if alertes.machines_indisponibles %}orange{% endif %}">{{ alertes.machines_indisponibles|length }}</span></h3>
+    <ul>{% for e in alertes.machines_indisponibles %}<li><a href="{% url 'admin:equipements_equipement_change' e.pk %}">{{ e }}</a><span class="badge orange">{{ e.get_etat_display }}</span></li>{% empty %}<li class="vide">Tout le parc est opérationnel.</li>{% endfor %}</ul>
+  </div>
+  <div class="panneau">
+    <h3>Maintenances préventives dues (≤ 7 j) <span class="badge {% if alertes.maintenances_dues %}orange{% endif %}">{{ alertes.maintenances_dues|length }}</span></h3>
+    <ul>{% for e in alertes.maintenances_dues %}<li><a href="{% url 'admin:equipements_equipement_change' e.pk %}">{{ e }}</a><span class="badge orange">{{ e.prochaine_maintenance|date:"d/m/Y" }}</span></li>{% empty %}<li class="vide">Aucune maintenance imminente.</li>{% endfor %}</ul>
+  </div>
+  <div class="panneau">
+    <h3>Incidents ouverts <span class="badge {% if alertes.incidents %}rouge{% endif %}">{{ alertes.incidents|length }}</span></h3>
+    <ul>{% for i in alertes.incidents %}<li><a href="{% url 'admin:equipements_incident_change' i.pk %}">{{ i.equipement.nom }}</a><span class="badge rouge">{{ i.get_gravite_display }}</span></li>{% empty %}<li class="vide">Aucun incident ouvert.</li>{% endfor %}</ul>
+  </div>
+  <div class="panneau">
+    <h3>Réservations du jour <span class="badge">{{ alertes.reservations_jour|length }}</span></h3>
+    <ul>{% for r in alertes.reservations_jour %}<li>{{ r.debut|time:"H:i" }}–{{ r.fin|time:"H:i" }} · {{ r.equipement.nom }}<span class="badge">{{ r.usager.prenom }} {{ r.usager.nom }}</span></li>{% empty %}<li class="vide">Aucune réservation aujourd'hui.</li>{% endfor %}</ul>
+  </div>
+  <div class="panneau">
+    <h3>Ressources humaines</h3>
+    <ul>
+      {% for c in alertes.conges_a_valider %}<li><a href="{% url 'admin:personnel_conge_change' c.pk %}">Congé à valider : {{ c.personnel }}</a><span class="badge orange">{{ c.date_debut|date:"d/m" }} → {{ c.date_fin|date:"d/m" }}</span></li>{% endfor %}
+      {% for p in alertes.contrats_echeance %}<li><a href="{% url 'admin:personnel_personnel_change' p.pk %}">Fin de contrat : {{ p }}</a><span class="badge orange">{{ p.date_fin|date:"d/m/Y" }}</span></li>{% endfor %}
+      {% if not alertes.conges_a_valider and not alertes.contrats_echeance %}<li class="vide">Rien à signaler.</li>{% endif %}
+    </ul>
+  </div>
+</div>
+
+{% for theme, items in themes %}
+<h2>{{ theme }}</h2>
+<div class="grille">
+  {% for r in items %}
+  <div class="kpi">
+    <div class="libelle">{{ r.libelle }}</div>
+    <div class="valeur">{{ r.valeur|intcomma }} <small>{{ r.unite }}</small></div>
+    {% if r.part_femmes is not None %}<div class="detail">dont {{ r.femmes|intcomma }} femmes ({{ r.part_femmes }} %)</div>{% endif %}
+    {% if r.cible %}
+      <div class="detail">Cible {{ fin|date:"Y" }} : {{ r.cible|intcomma }} — {{ r.taux_realisation }} %</div>
+      <div class="barre"><span style="width:{% if r.taux_realisation > 100 %}100{% else %}{{ r.taux_realisation|floatformat:0 }}{% endif %}%"></span></div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}
