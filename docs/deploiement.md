@@ -109,3 +109,33 @@ cd /srv/unipod/app && git pull && . .venv/bin/activate && set -a && . ./.env && 
 pip install -r requirements.txt && python manage.py sauvegarde && python manage.py migrate
 python manage.py collectstatic --noinput && sudo systemctl restart unipod
 ```
+
+## Environnement de test sur Railway (payant après la période d'essai)
+
+Railway est pratique pour **tester** la plateforme en ligne, mais ce n'est pas
+une solution sans frais durable : après les crédits d'essai, il faut un
+abonnement payant (vérifier les conditions en vigueur). À réserver aux tests.
+
+1. Sur railway.com : *New Project* → *Deploy from GitHub repo* →
+   `gestion_centre_unipod_citt` (choisir la branche à tester dans les
+   paramètres du service si elle n'est pas encore fusionnée).
+2. Onglet *Variables* du service :
+
+   | Variable | Valeur |
+   |---|---|
+   | `DJANGO_SECRET_KEY` | longue valeur aléatoire |
+   | `DJANGO_DEBUG` | `false` |
+   | `DJANGO_SUPERUSER_USERNAME` | `admin` (ou autre) |
+   | `DJANGO_SUPERUSER_PASSWORD` | mot de passe solide |
+   | `DEMO` | `true` pour charger les données fictives |
+   | `SQLITE_PATH` | `/data/db.sqlite3` (si un volume est monté sur `/data`) |
+
+3. *Settings* → *Networking* → *Generate Domain* : le domaine est pris en
+   compte automatiquement (`RAILWAY_PUBLIC_DOMAIN`).
+4. Facultatif : *New* → *Volume* monté sur `/data` pour que la base survive
+   aux redéploiements ; sans volume, la base est **recréée à chaque
+   déploiement** (acceptable pour une démonstration).
+
+Le fichier `railway.json` et le script `scripts/demarrage.sh` s'occupent du
+reste (migrations, fichiers statiques, référentiels, compte administrateur,
+démarrage de Gunicorn).

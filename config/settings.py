@@ -18,6 +18,11 @@ DEBUG = env_bool("DJANGO_DEBUG", True)
 ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h]
 CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o]
 
+# Domaine public fourni automatiquement par Railway (hébergement de test)
+if os.environ.get("RAILWAY_PUBLIC_DOMAIN"):
+    ALLOWED_HOSTS.append(os.environ["RAILWAY_PUBLIC_DOMAIN"])
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['RAILWAY_PUBLIC_DOMAIN']}")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
