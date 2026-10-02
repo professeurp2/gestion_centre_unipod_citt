@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # fichiers statiques sans serveur web dédié
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -82,12 +83,22 @@ if os.environ.get("POSTGRES_DB"):
         }
     }
 else:
+    # SQLite : aucun serveur de base de données à payer ni à administrer.
+    # Le mode WAL et les transactions IMMEDIATE permettent un usage multi-utilisateurs
+    # confortable pour un centre (quelques dizaines d'utilisateurs simultanés).
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": os.environ.get("SQLITE_PATH", BASE_DIR / "db.sqlite3"),
+            "OPTIONS": {
+                "init_command": "PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000;",
+                "transaction_mode": "IMMEDIATE",
+            },
         }
     }
+
+# Dossier des sauvegardes (commande ``manage.py sauvegarde``)
+SAUVEGARDE_DIR = Path(os.environ.get("SAUVEGARDE_DIR", BASE_DIR / "sauvegardes"))
 
 AUTH_USER_MODEL = "comptes.Utilisateur"
 
@@ -107,6 +118,15 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    # En production : fichiers compressés et versionnés (exige ``collectstatic``).
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        if DEBUG
+        else "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -131,7 +151,9 @@ REST_FRAMEWORK = {
 # Identité de l'instance (affichée dans l'interface)
 UNIPOD_NOM_PLATEFORME = os.environ.get("UNIPOD_NOM_PLATEFORME", "UNIPOD Mali — Gestion du centre")
 
-if not DEBUG:
+# HTTPS : activé par défaut en production. Sur un serveur du réseau local sans
+# certificat (accès http://), définir DJANGO_HTTPS=false sinon la connexion échoue.
+if not DEBUG and env_bool("DJANGO_HTTPS", True):
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

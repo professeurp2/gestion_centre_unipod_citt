@@ -5,7 +5,10 @@
 - **Django 5.2 LTS** (Python ≥ 3.10) : ORM, authentification, interface de gestion.
 - **Django REST Framework** + **django-filter** : API REST pour applications
   mobiles, bornes d'accueil, outils BI ou intégration avec d'autres UNIPOD.
-- **SQLite** en développement, **PostgreSQL** en production.
+- **SQLite** (mode WAL) en développement comme en production : aucun coût ni
+  serveur de base de données ; PostgreSQL reste possible si un serveur gratuit
+  existe déjà.
+- **WhiteNoise** + **Gunicorn** : service web autonome, sans serveur web dédié.
 
 ## Organisation
 

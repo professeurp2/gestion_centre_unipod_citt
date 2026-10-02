@@ -60,11 +60,13 @@ super-utilisateur. Les droits se règlent dans `apps/core/referentiels.py`.
   périodicité de la machine ; les échéances proches remontent en alerte.
 - L'approbation d'un congé annuel le décompte du solde de l'agent.
 
-## Production
+## Déploiement sans frais
 
-Copier `.env.example` en `.env` (ou définir les variables), renseigner
-PostgreSQL, puis `python manage.py collectstatic` et servir avec gunicorn
-derrière un proxy HTTPS.
+La plateforme est pensée pour fonctionner **sans coût récurrent** : uniquement
+des logiciels libres, base **SQLite** (un fichier, aucun serveur à payer),
+fichiers statiques servis par WhiteNoise, sauvegardes intégrées
+(`python manage.py sauvegarde`). Recommandé : un serveur local au centre ou à
+l'université. Guide complet : [`docs/deploiement.md`](docs/deploiement.md).
 
 Voir [`docs/architecture.md`](docs/architecture.md) pour l'architecture et la
 façon d'étendre la plateforme.
